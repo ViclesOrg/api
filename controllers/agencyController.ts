@@ -2,7 +2,7 @@ import Agency from "../entities/Agency.ts";
 import {newClient} from "../db_connection.ts";
 import { createHash } from 'crypto';
 import {APIErrors} from "../entities/APIErrors.ts";
-import {createUser, deleteUser} from "./usersController.ts";
+import {createUser, deleteUser, checkAuth} from "./usersController.ts";
 
 export class agencyController
 {
@@ -67,10 +67,6 @@ export class agencyController
     }
 
 
-    async checkFingerprint(fingerprint: string)
-    {
-
-    }
 
     async authenticate(user: object)
     {
@@ -121,10 +117,10 @@ export class agencyController
                 return APIErrors.wrongCredentials
             else
             {
-                return res.rows[0]
-                // if (this.authenticate(res.rows[0]) != APIErrors.somethingWentWrong)
-                //     return res.rows[0]
-                // return APIErrors.somethingWentWrong
+                // return res.rows[0]
+                if (this.authenticate(res.rows[0]) !== APIErrors.somethingWentWrong)
+                    return res.rows[0]
+                return APIErrors.somethingWentWrong
             }
         }catch (err) {
             console.error('Error inserting data:', err);
@@ -140,6 +136,8 @@ export class agencyController
             return await this.create()
         else if (this.operation === 'login')
             return await this.login()
+        else if (this.operation === 'checkauth')
+            return await checkAuth(this.data.fingerprint)
     }
 
 }
