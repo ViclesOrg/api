@@ -25,7 +25,7 @@ export class agencyController
         {
             return parseInt((await client.query(selectQuery, Values)).rows[0]['email'])
         }catch (err) {
-            console.error('Error inserting data:', err);
+            console.error('Error selecting data:', err);
         }
         finally {
             await client.end();
@@ -123,7 +123,54 @@ export class agencyController
                 return APIErrors.somethingWentWrong
             }
         }catch (err) {
-            console.error('Error inserting data:', err);
+            console.error('Error selecting data:', err);
+        }
+        finally {
+            await client.end();
+        }
+    }
+
+    async brands()
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `SELECT * from brands`;
+        try
+        {
+            const res = await client.query(selectQuery)
+            if (res.rowCount === 0)
+                return APIErrors.wrongCredentials
+            else
+            {
+                return res.rows
+            }
+        }catch (err) {
+            console.error('Error selecting data:', err);
+        }
+        finally {
+            await client.end();
+        }
+    }
+
+    async models(brand)
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `SELECT * from models m WHERE m.brand = $1`;
+        const values = [brand]
+        try
+        {
+            const res = await client.query(selectQuery, values)
+            if (res.rowCount === 0)
+                return APIErrors.wrongCredentials
+            else
+            {
+                return res.rows
+            }
+        }catch (err) {
+            console.error('Error selecting data:', err);
         }
         finally {
             await client.end();
@@ -138,6 +185,11 @@ export class agencyController
             return await this.login()
         else if (this.operation === 'checkauth')
             return await checkAuth(this.data.fingerprint)
+        else if (this.operation === 'brands')
+            return await this.brands()
+        else if (this.operation === 'models')
+            return await this.models(this.data.brand)
+
     }
 
 }
