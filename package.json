@@ -9,6 +9,8 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.25.0",
+    "base64": "^2.1.0",
     "pg": "^8.12.0"
   }
 }

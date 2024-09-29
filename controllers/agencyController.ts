@@ -3,6 +3,7 @@ import {newClient} from "../db_connection.ts";
 import { createHash } from 'crypto';
 import {APIErrors} from "../entities/APIErrors.ts";
 import {createUser, deleteUser, checkAuth} from "./usersController.ts";
+import { uploadImages } from "./azureBlob.ts";
 
 export class agencyController
 {
@@ -12,7 +13,7 @@ export class agencyController
         this.operation = operation;
         this.data = JSON.parse(data);
 
-        console.log(operation, data)
+        // console.log(operation, data)
     }
 
     async checkExistence(email: string, name: string, rc: string): Promise<any>{
@@ -177,6 +178,14 @@ export class agencyController
         }
     }
 
+    async addCar()
+    {
+        const pack = {cover: this.data.cover, images: this.data.images}
+        console.log(await uploadImages(pack, this.data.plate));
+        
+        return 0;
+    }
+
     async resolve()
     {
         if (this.operation === 'create')
@@ -189,6 +198,8 @@ export class agencyController
             return await this.brands()
         else if (this.operation === 'models')
             return await this.models(this.data.brand)
+        else if (this.operation === 'addCar')
+            return await this.addCar()
 
     }
 
