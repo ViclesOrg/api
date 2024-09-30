@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import {APIErrors} from "../entities/APIErrors.ts";
 import {createUser, deleteUser, checkAuth} from "./usersController.ts";
 import { uploadImages } from "./azureBlob.ts";
+import { createNewCar } from "./carController.ts";
 
 export class agencyController
 {
@@ -109,7 +110,7 @@ export class agencyController
         await client.connect();
 
         const selectQuery = `
-            SELECT a.user_id, a.name, a.phone, a.address, a.logo, a.banner FROM agencies a Where a.email=$1 and a.password=$2`;
+            SELECT id, a.user_id, a.name, a.phone, a.address, a.logo, a.banner FROM agencies a Where a.email=$1 and a.password=$2`;
         const Values = [email, passHash]
         try
         {
@@ -179,11 +180,8 @@ export class agencyController
     }
 
     async addCar()
-    {
-        const pack = {cover: this.data.cover, images: this.data.images}
-        console.log(await uploadImages(pack, this.data.plate));
-        
-        return 0;
+    {   
+        return createNewCar(this.data);
     }
 
     async resolve()
