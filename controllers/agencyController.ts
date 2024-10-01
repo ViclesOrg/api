@@ -119,7 +119,6 @@ export class agencyController
                 return APIErrors.wrongCredentials
             else
             {
-                // return res.rows[0]
                 if (this.authenticate(res.rows[0]) !== APIErrors.somethingWentWrong)
                     return res.rows[0]
                 return APIErrors.somethingWentWrong
@@ -142,7 +141,7 @@ export class agencyController
         {
             const res = await client.query(selectQuery)
             if (res.rowCount === 0)
-                return APIErrors.wrongCredentials
+                return APIErrors.somethingWentWrong
             else
             {
                 return res.rows
@@ -155,7 +154,7 @@ export class agencyController
         }
     }
 
-    async models(brand)
+    async models(brand: number)
     {
         const client = newClient();
         await client.connect();
@@ -166,13 +165,38 @@ export class agencyController
         {
             const res = await client.query(selectQuery, values)
             if (res.rowCount === 0)
-                return APIErrors.wrongCredentials
+                return APIErrors.somethingWentWrong
             else
             {
                 return res.rows
             }
         }catch (err) {
             console.error('Error selecting data:', err);
+        }
+        finally {
+            await client.end();
+        }
+    }
+
+    async getAllCars(agency: number)
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `SELECT * FROM cars WHERE agency=$1`;
+        const values = [agency]
+        try
+        {
+            const res = await client.query(selectQuery, values)
+            if (res.rowCount === 0)
+                return APIErrors.emptyArray
+            else
+            {
+                return res.rows
+            }
+        }catch (err) {
+            console.error('Error selecting data:', err);
+            return APIErrors.somethingWentWrong
         }
         finally {
             await client.end();
@@ -198,6 +222,8 @@ export class agencyController
             return await this.models(this.data.brand)
         else if (this.operation === 'addCar')
             return await this.addCar()
+        else if (this.operation === 'getAllCars')
+            return await this.getAllCars(this.data.agency)
 
     }
 

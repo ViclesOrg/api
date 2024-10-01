@@ -67,9 +67,7 @@ async function addImages(images: string[], carId: number) {
 		  await client.query(query);
 		} catch (rowError) {
 		  console.error(`Error inserting image: ${img} for car: ${carId}`, rowError);
-		  // Decide whether to continue with the next image or throw the error
-		  // If you want to stop on first error, you can throw:
-		  // throw rowError;
+		  return APIErrors.Success;
 		}
 	  }
   
