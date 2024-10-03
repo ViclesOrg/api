@@ -178,12 +178,38 @@ export class agencyController
         }
     }
 
+    async checkPlateExistence(plate: string)
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `SELECT * FROM cars WHERE plate=$1`;
+        const values = [plate]
+        try
+        {
+            const res = await client.query(selectQuery, values)
+            if (res.rowCount === 0)
+                return APIErrors.Success
+            else
+                return APIErrors.Failure
+        }catch (err) {
+            console.error('Error selecting data:', err);
+            return APIErrors.somethingWentWrong
+        }
+        finally {
+            await client.end();
+        }
+    }
+
     async getAllCars(agency: number)
     {
         const client = newClient();
         await client.connect();
 
-        const selectQuery = `SELECT * FROM cars WHERE agency=$1`;
+        const selectQuery = `SELECT ca.*, mo.name as cmodel, br.name as cbrand FROM cars ca 
+                            INNER JOIN models mo ON ca.model = mo.id 
+                            INNER JOIN brands br ON br.id = mo.brand  
+                            WHERE agency=$1`;
         const values = [agency]
         try
         {
@@ -205,7 +231,10 @@ export class agencyController
 
     async addCar()
     {   
-        return createNewCar(this.data);
+        this.data.plate = this.data.plate.toUpperCase()
+        if (await this.checkPlateExistence(this.data.plate) === APIErrors.Success)
+            return createNewCar(this.data);
+        return APIErrors.carExists
     }
 
     async resolve()
