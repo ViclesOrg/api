@@ -206,7 +206,7 @@ export class agencyController
         const client = newClient();
         await client.connect();
 
-        const selectQuery = `SELECT ca.*, mo.name as cmodel, br.name as cbrand FROM cars ca 
+        const selectQuery = `SELECT ca.*, mo.id as moid, mo.name as cmodel, br.id as brid, br.name as cbrand FROM cars ca 
                             INNER JOIN models mo ON ca.model = mo.id 
                             INNER JOIN brands br ON br.id = mo.brand  
                             WHERE agency=$1`;
