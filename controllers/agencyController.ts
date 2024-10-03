@@ -209,7 +209,7 @@ export class agencyController
         const selectQuery = `SELECT ca.*, mo.id as moid, mo.name as cmodel, br.id as brid, br.name as cbrand FROM cars ca 
                             INNER JOIN models mo ON ca.model = mo.id 
                             INNER JOIN brands br ON br.id = mo.brand  
-                            WHERE agency=$1`;
+                            WHERE ca.agency=$1 and ca.detached = false and ca.sold = false`;
         const values = [agency]
         try
         {
@@ -230,11 +230,37 @@ export class agencyController
     }
 
     async addCar()
-    {   
+    {   if (this.data === undefined || this.data === null)
+            return new Response('Not Found', { status: 404 })
         this.data.plate = this.data.plate.toUpperCase()
         if (await this.checkPlateExistence(this.data.plate) === APIErrors.Success)
             return createNewCar(this.data);
         return APIErrors.carExists
+    }
+
+    async deleteCar(id: number)
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `UPDATE cars c SET detached = true where id=$1`;
+        const values = [id]
+        try
+        {
+            const res = await client.query(selectQuery, values)
+            if (res.rowCount === 0)
+                return APIErrors.emptyArray
+            else
+            {
+                return res.rows
+            }
+        }catch (err) {
+            console.error('Error selecting data:', err);
+            return APIErrors.somethingWentWrong
+        }
+        finally {
+            await client.end();
+        }
     }
 
     async resolve()
@@ -253,6 +279,8 @@ export class agencyController
             return await this.addCar()
         else if (this.operation === 'getAllCars')
             return await this.getAllCars(this.data.agency)
+        else if (this.operation === 'deleteCar')
+            return await this.deleteCar(this.data.id)
 
     }
 

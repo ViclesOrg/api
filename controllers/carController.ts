@@ -30,7 +30,7 @@ async function insertCar(carData: car, cover: string)
 		RETURNING *`;
 	const Values = [carData.model_year, carData.seats, carData.miles, carData.ac, 
 					carData.gear, carData.trunc, carData.model, carData.fuel, 
-					carData.agency, carData.plate, carData.price, "https://viclesimages-g6c0fhdagce4d8d4.z02.azurefd.net" + (new URL(cover)).pathname];
+					carData.agency, carData.plate, carData.price, "https://cdn.vicles.com/" + (new URL(cover)).pathname];
 	try
 	{
 		const res = await client.query(insertQuery, Values)
