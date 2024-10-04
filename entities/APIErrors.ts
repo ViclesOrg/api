@@ -6,4 +6,6 @@ export const APIErrors = {
     emptyArray : {status: 'emptyArray', code : 3},
     Failure: {status: 'failure', code : 4},
     carExists : {status: 'carExists', code : 5},
+    notFound : {status: 'notFound', code : 6},
+    invalidInput : {status: 'invalidInput', code : 7},
 }

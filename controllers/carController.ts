@@ -63,7 +63,7 @@ async function addImages(images: string[], carId: number) {
   
 	  for (const img of images) {
 		try {
-		  query.values = [img, carId];
+		  query.values = ["https://cdn.vicles.com/" + (new URL(img)).pathname, carId];
 		  await client.query(query);
 		} catch (rowError) {
 		  console.error(`Error inserting image: ${img} for car: ${carId}`, rowError);
@@ -102,4 +102,85 @@ export async function createNewCar(carData: car)
 			return APIErrors.somethingWentWrong
 		return createdCar
 	}
+}
+
+async function updateCar(carId: number, carData: Partial<car>) {
+    const client = newClient();
+    await client.connect();
+
+    const updateQuery = `
+        UPDATE cars
+        SET "year" = $1, seats = $2, miles = $3, ac = $4, gear = $5, "trunk_size" = $6,
+            model = $7, fuel = $8, agency = $9, plate = $10, price = $11
+        WHERE id = $12
+        RETURNING *`;
+
+    const values = [
+        carData.model_year, carData.seats, carData.miles, carData.ac,
+        carData.gear, carData.trunc, carData.model, carData.fuel,
+        carData.agency, carData.plate, carData.price, carId
+    ];
+
+    try {
+        const res = await client.query(updateQuery, values);
+        if (res.rowCount > 0) {
+            const updatedCar = res.rows[0];
+
+            // Handle cover image update if it's a base64 string
+            if (carData.cover && typeof carData.cover === 'string' && carData.cover.startsWith('data:image')) {
+                const pack = { cover: carData.cover, images: [] };
+                const images = await uploadImages(pack, createHash('sha256').update(updatedCar.plate + (new Date()).toString()).digest('hex'));
+                const coverUpdateQuery = 'UPDATE cars SET cover = $1 WHERE id = $2';
+                await client.query(coverUpdateQuery, ["https://cdn.vicles.com/" + (new URL(images.coverUrl)).pathname, carId]);
+            }
+
+            // Handle images array update if it contains base64 strings
+            if (carData.images) {
+                let imagesArray: any[];
+                try {
+                    imagesArray = JSON.parse(carData.images);
+                } catch (error) {
+                    console.error('Error parsing images JSON:', error);
+                    return APIErrors.invalidInput;
+                }
+
+                if (Array.isArray(imagesArray) && imagesArray.some(img => typeof img === 'string' && img.startsWith('data:image'))) {
+                    const pack = { cover: '', images: imagesArray };
+                    const images = await uploadImages(pack, createHash('sha256').update(updatedCar.plate + (new Date()).toString()).digest('hex'));
+                    await deleteCarImages(carId);
+                    await addImages(images.imageUrls, carId);
+                }
+            }
+
+            return updatedCar;
+        } else {
+            return APIErrors.notFound;
+        }
+    } catch (err) {
+        console.error('Error updating car:', err);
+        return APIErrors.somethingWentWrong;
+    } finally {
+        await client.end();
+    }
+}
+
+async function deleteCarImages(carId: number) {
+    const client = newClient();
+    await client.connect();
+
+    try {
+        await client.query('DELETE FROM car_images WHERE car = $1', [carId]);
+    } catch (err) {
+        console.error('Error deleting car images:', err);
+    } finally {
+        await client.end();
+    }
+}
+
+export async function updateExistingCar(carId: number, carData: Partial<car>) {
+    const updatedCar = await updateCar(carId, carData);
+    if (updatedCar === APIErrors.notFound || updatedCar === APIErrors.somethingWentWrong) {
+        return updatedCar;
+    }
+    return updatedCar;
 }

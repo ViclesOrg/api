@@ -3,8 +3,7 @@ import {newClient} from "../db_connection.ts";
 import { createHash } from 'crypto';
 import {APIErrors} from "../entities/APIErrors.ts";
 import {createUser, deleteUser, checkAuth} from "./usersController.ts";
-import { uploadImages } from "./azureBlob.ts";
-import { createNewCar } from "./carController.ts";
+import { createNewCar , updateExistingCar} from "./carController.ts";
 
 export class agencyController
 {
@@ -201,6 +200,49 @@ export class agencyController
         }
     }
 
+    async checkPlateExistenceException(plate: string, id: number)
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `SELECT * FROM cars WHERE plate=$1 and id != $2`;
+        const values = [plate, id]
+        try
+        {
+            const res = await client.query(selectQuery, values)
+            if (res.rowCount === 0)
+                return APIErrors.Success
+            else
+                return APIErrors.Failure
+        }catch (err) {
+            console.error('Error selecting data:', err);
+            return APIErrors.somethingWentWrong
+        }
+        finally {
+            await client.end();
+        }
+    }
+
+    async getCarImages(id: number)
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `SELECT link FROM car_images WHERE car=$1`;
+        const values = [id]
+        try
+        {
+            const res = await client.query(selectQuery, values)
+            return res.rows
+        }catch (err) {
+            console.error('Error selecting data:', err);
+            return APIErrors.somethingWentWrong
+        }
+        finally {
+            await client.end();
+        }
+    }
+
     async getAllCars(agency: number)
     {
         const client = newClient();
@@ -208,7 +250,7 @@ export class agencyController
 
         const selectQuery = `SELECT ca.*, mo.id as moid, mo.name as cmodel, br.id as brid, br.name as cbrand FROM cars ca 
                             INNER JOIN models mo ON ca.model = mo.id 
-                            INNER JOIN brands br ON br.id = mo.brand  
+                            INNER JOIN brands br ON br.id = mo.brand
                             WHERE ca.agency=$1 and ca.detached = false and ca.sold = false`;
         const values = [agency]
         try
@@ -218,6 +260,9 @@ export class agencyController
                 return APIErrors.emptyArray
             else
             {
+                for (const row of res.rows) {
+                    row.images = await this.getCarImages(row.id)
+                }
                 return res.rows
             }
         }catch (err) {
@@ -234,7 +279,7 @@ export class agencyController
             return new Response('Not Found', { status: 404 })
         this.data.plate = this.data.plate.toUpperCase()
         if (await this.checkPlateExistence(this.data.plate) === APIErrors.Success)
-            return createNewCar(this.data);
+            return await createNewCar(this.data);
         return APIErrors.carExists
     }
 
@@ -263,6 +308,16 @@ export class agencyController
         }
     }
 
+    async updateCar()
+    {
+        if (this.data === undefined || this.data === null)
+            return new Response('Not Found', { status: 404 })
+        this.data.plate = this.data.plate.toUpperCase()
+        if (await this.checkPlateExistenceException(this.data.plate, this.data.id) === APIErrors.Success)
+            return await updateExistingCar(this.data.id, this.data);
+        return APIErrors.carExists
+    }
+
     async resolve()
     {
         if (this.operation === 'create')
@@ -281,6 +336,8 @@ export class agencyController
             return await this.getAllCars(this.data.agency)
         else if (this.operation === 'deleteCar')
             return await this.deleteCar(this.data.id)
+        else if (this.operation === 'updateCar')
+            return await this.updateCar()
 
     }
 
