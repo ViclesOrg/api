@@ -243,33 +243,67 @@ export class agencyController
         }
     }
 
-    async getAllCars(agency: number)
-    {
+    async getAllCars(agency: number, page: number = 1, pageSize: number = 10, searchTerm='') {
         const client = newClient();
         await client.connect();
+    
+        const offset = (page - 1) * pageSize;
+        let selectQuery = `
+            SELECT ca.*, mo.id as moid, mo.name as cmodel, br.id as brid, br.name as cbrand 
+            FROM cars ca 
+            INNER JOIN models mo ON ca.model = mo.id 
+            INNER JOIN brands br ON br.id = mo.brand
+            WHERE ca.agency=$1 AND ca.detached = false AND ca.sold = false`;
+        let countQuery = `
+            SELECT COUNT(*) 
+            FROM cars ca 
+            INNER JOIN models mo ON ca.model = mo.id 
+            INNER JOIN brands br ON br.id = mo.brand
+            WHERE ca.agency=$1 AND ca.detached = false AND ca.sold = false
+        `;
+        const values: any[] = [agency, pageSize, offset];
+        const countValues: any[] = [agency]
 
-        const selectQuery = `SELECT ca.*, mo.id as moid, mo.name as cmodel, br.id as brid, br.name as cbrand FROM cars ca 
-                            INNER JOIN models mo ON ca.model = mo.id 
-                            INNER JOIN brands br ON br.id = mo.brand
-                            WHERE ca.agency=$1 and ca.detached = false and ca.sold = false`;
-        const values = [agency]
-        try
-        {
-            const res = await client.query(selectQuery, values)
-            if (res.rowCount === 0)
-                return APIErrors.emptyArray
-            else
-            {
-                for (const row of res.rows) {
-                    row.images = await this.getCarImages(row.id)
-                }
-                return res.rows
-            }
-        }catch (err) {
-            console.error('Error selecting data:', err);
-            return APIErrors.somethingWentWrong
+        if (searchTerm !== '') {
+            const searchValue = `%${searchTerm}%`;
+            selectQuery += ` AND (ca.plate LIKE $4 OR mo.name LIKE $4 OR br.name LIKE $4)`;
+            countQuery += ` AND (ca.plate LIKE $2 OR mo.name LIKE $2 OR br.name LIKE $2)`;
+    
+            values.push(searchValue);  // Push the search term to values array for select query
+            countValues.push(searchValue);  // Push the search term to values array for count query
         }
-        finally {
+        selectQuery += ` LIMIT $2 OFFSET $3`
+        
+        try {
+            const [resData, resCount] = await Promise.all([
+                client.query(selectQuery, values),
+                client.query(countQuery, countValues)
+            ]);
+    
+            if (resData.rowCount === 0) {
+                return APIErrors.emptyArray;
+            } else {
+                const totalCount = parseInt(resCount.rows[0].count);
+                const totalPages = Math.ceil(totalCount / pageSize);
+    
+                for (const row of resData.rows) {
+                    row.images = await this.getCarImages(row.id);
+                }
+    
+                return {
+                    cars: resData.rows,
+                    pagination: {
+                        currentPage: page,
+                        pageSize: pageSize,
+                        totalCount: totalCount,
+                        totalPages: totalPages
+                    }
+                };
+            }
+        } catch (err) {
+            console.error('Error selecting data:', err);
+            return APIErrors.somethingWentWrong;
+        } finally {
             await client.end();
         }
     }
@@ -333,7 +367,7 @@ export class agencyController
         else if (this.operation === 'addCar')
             return await this.addCar()
         else if (this.operation === 'getAllCars')
-            return await this.getAllCars(this.data.agency)
+            return await this.getAllCars(this.data.agency, this.data.page, this.data.pageSize, this.data.searchTerm)
         else if (this.operation === 'deleteCar')
             return await this.deleteCar(this.data.id)
         else if (this.operation === 'updateCar')
