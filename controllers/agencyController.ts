@@ -8,7 +8,7 @@ import { createNewCar , updateExistingCar} from "./carController.ts";
 export class agencyController
 {
     operation: string
-    data: string
+    data: any
     constructor(operation: string, data: string){
         this.operation = operation;
         this.data = JSON.parse(data);
@@ -38,7 +38,7 @@ export class agencyController
     {
         if (await this.checkExistence(this.data.email, this.data.name, this.data.rc) > 0)
             return APIErrors.agencyExists
-        const agency = new Agency(0, this.data.name, this.data.rc, this.data.email, this.data.password, this.data.address, '', '', '');
+        const agency: any = new Agency(0, this.data.name, this.data.rc, this.data.email, this.data.password, this.data.address, '', '', '');
         const client = newClient();
         await client.connect();
         const user_id = await createUser('agency')
@@ -69,7 +69,7 @@ export class agencyController
 
 
 
-    async authenticate(user: object)
+    async authenticate(user: any)
     {
         const token= createHash('sha256').update(JSON.stringify(user)+Date.now().toString()).digest('hex')
         const id = user.user_id
@@ -113,12 +113,12 @@ export class agencyController
         const Values = [email, passHash]
         try
         {
-            const res = await client.query(selectQuery, Values)
+            const res: any = await client.query(selectQuery, Values)
             if (res.rowCount === 0)
                 return APIErrors.wrongCredentials
             else
             {
-                if (this.authenticate(res.rows[0]) !== APIErrors.somethingWentWrong)
+                if (await this.authenticate(res.rows[0]) !== APIErrors.somethingWentWrong)
                     return res.rows[0]
                 return APIErrors.somethingWentWrong
             }
