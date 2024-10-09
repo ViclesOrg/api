@@ -1,5 +1,6 @@
 import { serve } from 'bun';
 import { agencyController } from './controllers/agencyController';
+import { renterController } from './controllers/renterController';
 const PORT = 3000;
 
 serve({
@@ -7,7 +8,7 @@ serve({
     fetch: async (request)=> {
         const url = new URL(request.url);
         const headers = {
-            "Access-Control-Allow-Origin": "http://localhost:8080",
+            "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type",
             "Content-Type": "application/json",
@@ -22,6 +23,17 @@ serve({
                 const operation = url.pathname.split("/")[2];
                 const agency = new agencyController(operation, JSON.stringify(body));
                 const result = await agency.resolve()
+                return new Response(JSON.stringify(result),
+                    {
+                        headers: headers
+                    });
+            }
+            else if (url.pathname.includes('/renters'))
+            {   
+                const body = await request.formData();
+                const operation = url.pathname.split("/")[2];
+                const renter = new renterController(operation, JSON.stringify(body));
+                const result = await renter.resolve()
                 return new Response(JSON.stringify(result),
                     {
                         headers: headers
