@@ -8,4 +8,5 @@ export const APIErrors = {
     carExists : {status: 'carExists', code : 5},
     notFound : {status: 'notFound', code : 6},
     invalidInput : {status: 'invalidInput', code : 7},
+    renterExists : {status: 'renterExists', code : 8},
 }
