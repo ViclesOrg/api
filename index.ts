@@ -54,6 +54,10 @@ serve({
                         headers: headers
                     });
             }
+            else if (url.pathname.includes('/health'))
+            {
+                return new Response('OK', { status: 200 });
+            }
         }
 
         return new Response('Not Found', { status: 404 });

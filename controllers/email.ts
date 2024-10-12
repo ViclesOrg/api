@@ -1,0 +1,1 @@
+const RESEND_API_KEY = "re_JMmuJSkq_Piy2XPA5PTK62uRDg8FX7Fc2"
