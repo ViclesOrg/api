@@ -54,6 +54,17 @@ serve({
                         headers: headers
                     });
             }
+            else if (url.pathname.includes('/renters'))
+            {   
+                const body = JSON.parse(JSON.stringify(url.searchParams));
+                const operation = url.pathname.split("/")[2];
+                const renter = new renterController(operation, JSON.stringify(body));
+                const result = await renter.resolve()
+                return new Response(JSON.stringify(result),
+                    {
+                        headers: headers
+                    });
+            }
             else if (url.pathname.includes('/health'))
             {
                 return new Response('OK', { status: 200 });
