@@ -94,9 +94,7 @@ export class renterController
     }
 
     async login(data: any)
-    {
-        console.log(data);
-        
+    {   
         const email = data.email
         const passHash = createHash('sha256').update(data.password).digest('hex')
 
