@@ -180,10 +180,10 @@ export class renterController
 
         const selectQuery = `
             SELECT * FROM models WHERE brand = $1`;
-
+        const values = [brand]
         try
         {
-            const res: any = await client.query(selectQuery)
+            const res: any = await client.query(selectQuery, values)
             if (res.rowCount === 0)
                 return {fuel: [], error: APIErrors.somethingWentWrong}
             else
@@ -207,6 +207,7 @@ export class renterController
             minPrice?: number;
             maxPrice?: number;
             fuel?: string;
+            agency?: string;
         } = {}
     ) {
         const client = newClient();
@@ -219,11 +220,11 @@ export class renterController
         const params: any[] = [limit, offset];  // Parameters start with LIMIT and OFFSET
     
         if (filters.brand) {
-            whereConditions.push(`br.name ILIKE $${params.length + 1}`);
+            whereConditions.push(`br.id = $${params.length + 1}`);
             params.push(`%${filters.brand}%`);
         }
         if (filters.model) {
-            whereConditions.push(`mo.name ILIKE $${params.length + 1}`);
+            whereConditions.push(`mo.id = $${params.length + 1}`);
             params.push(`%${filters.model}%`);
         }
         if (filters.minPrice) {
@@ -242,10 +243,11 @@ export class renterController
         const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')} AND ca.detached = false AND ca.sold = false` : `WHERE ca.detached = false AND ca.sold = false`;
     
         const selectQuery = `
-            SELECT ca.id, ca.price, ca.cover, mo.name AS cmodel, br.name AS cbrand
+            SELECT ca.id, ca.price, ca.cover, mo.name AS cmodel, br.name AS cbrand, ag.name AS "owner"
             FROM cars ca
             INNER JOIN models mo ON ca.model = mo.id
             INNER JOIN brands br ON br.id = mo.brand
+            INNER JOIN agencies ag ON ca.agency = ag.id
             ${whereClause}
             LIMIT $1 OFFSET $2`;
     
@@ -279,5 +281,7 @@ export class renterController
             return await this.getFuel()
         else if (this.operation === 'brands')
             return await this.getBrands()
+        else if (this.operation === 'models')
+            return await this.getModels(this.data.brand)
 	}
 }
