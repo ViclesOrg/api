@@ -199,16 +199,14 @@ export class renterController
     }
 
     async getActiveCars(
-        page: number = 1,
-        limit: number = 30,
-        filters: {
-            brand?: string;
-            model?: string;
-            minPrice?: number;
-            maxPrice?: number;
-            fuel?: string;
-            agency?: string;
-        } = {}
+        page = 1,
+        limit = 30,
+        brand:number,
+        model:number,
+        minPrice:number,
+        maxPrice:number,
+        fuel:number,
+        agency:string
     ) {
         const client = newClient();
         await client.connect();
@@ -217,30 +215,49 @@ export class renterController
     
         // Dynamic filtering query
         const whereConditions = [];
-        const params: any[] = [limit, offset];  // Parameters start with LIMIT and OFFSET
+        const params:any = [limit, offset];
     
-        if (filters.brand) {
-            whereConditions.push(`br.id = $${params.length + 1}`);
-            params.push(`%${filters.brand}%`);
+        // Check for brand and model
+        console.log(brand,
+            model,
+            minPrice,
+            maxPrice,
+            fuel,
+            agency)
+
+        if (brand) {
+            whereConditions.push(`CAST(br.id AS TEXT) = $${params.length + 1}`);
+            params.push(brand);
         }
-        if (filters.model) {
-            whereConditions.push(`mo.id = $${params.length + 1}`);
-            params.push(`%${filters.model}%`);
+        if (model) {
+            whereConditions.push(`CAST(mo.id AS TEXT) = $${params.length + 1}`);
+            params.push(model);
         }
-        if (filters.minPrice) {
+    
+        // Numeric comparisons for prices
+        if (minPrice !== undefined && !isNaN(minPrice)) {
             whereConditions.push(`ca.price >= $${params.length + 1}`);
-            params.push(filters.minPrice);
+            params.push(minPrice);
         }
-        if (filters.maxPrice) {
+        if (maxPrice !== undefined && !isNaN(maxPrice)) {
             whereConditions.push(`ca.price <= $${params.length + 1}`);
-            params.push(filters.maxPrice);
-        }
-        if (filters.fuel) {
-            whereConditions.push(`ca.fuel = $${params.length + 1}`);
-            params.push(`%${filters.fuel}%`);
+            params.push(maxPrice);
         }
     
-        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')} AND ca.detached = false AND ca.sold = false` : `WHERE ca.detached = false AND ca.sold = false`;
+        // Fuel and agency filters
+        if (fuel !== null) {
+            whereConditions.push(`CAST(ca.fuel AS TEXT) = $${params.length + 1}`);
+            params.push(fuel);
+        }
+        if (agency) {
+            whereConditions.push(`CAST(ag.name AS TEXT) LIKE $${params.length + 1}`);
+            params.push(agency);
+        }
+    
+        // Ensure basic conditions are always applied
+        const whereClause = whereConditions.length > 0
+            ? `WHERE ${whereConditions.join(' AND ')} AND ca.detached = false AND ca.sold = false`
+            : `WHERE ca.detached = false AND ca.sold = false`;
     
         const selectQuery = `
             SELECT ca.id, ca.price, ca.cover, mo.name AS cmodel, br.name AS cbrand, ag.name AS "owner"
@@ -252,7 +269,7 @@ export class renterController
             LIMIT $1 OFFSET $2`;
     
         try {
-            const res: any = await client.query(selectQuery, params);
+            const res = await client.query(selectQuery, params);
     
             if (res.rowCount === 0) {
                 return { cars: [], error: APIErrors.notFound };
@@ -261,13 +278,15 @@ export class renterController
             }
         } catch (err) {
             console.error('Error selecting data:', err);
+            if (err instanceof Error) {
+                console.error('Error message:', err.message);
+                console.error('Error stack:', err.stack);
+            }
             return { cars: [], error: APIErrors.somethingWentWrong };
         } finally {
             await client.end();
         }
     }
-    
-    
 
 	async resolve()
     {
@@ -276,7 +295,8 @@ export class renterController
         else if (this.operation === 'login')
             return await this.login(this.data)
         else if (this.operation === 'allCars')
-            return await this.getActiveCars(this.data.page, this.data.limit)
+            return await this.getActiveCars(this.data.page, this.data.limit, this.data.brand,
+            this.data.model, this.data.minPrice, this.data.maxPrice, this.data.fuel, this.data.agency)
         else if (this.operation === 'fuel')
             return await this.getFuel()
         else if (this.operation === 'brands')
