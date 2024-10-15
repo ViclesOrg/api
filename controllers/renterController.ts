@@ -201,12 +201,12 @@ export class renterController
     async getActiveCars(
         page = 1,
         limit = 30,
-        brand:number,
-        model:number,
-        minPrice:number,
-        maxPrice:number,
-        fuel:number,
-        agency:string
+        brand?: number,
+        model?: number,
+        minPrice?: number,
+        maxPrice?: number,
+        fuel?: number,
+        agency?: string
     ) {
         const client = newClient();
         await client.connect();
@@ -215,22 +215,24 @@ export class renterController
     
         // Dynamic filtering query
         const whereConditions = [];
-        const params:any = [limit, offset];
+        const params: any[] = [limit, offset];
     
         // Check for brand and model
-        console.log(brand,
-            model,
-            minPrice,
-            maxPrice,
-            fuel,
-            agency)
-
-        if (brand) {
-            whereConditions.push(`CAST(br.id AS TEXT) = $${params.length + 1}`);
+        console.log(
+            "Brand:", brand,
+            "Model:", model,
+            "Min:", minPrice,
+            "Max:", maxPrice,
+            "Fuel:", fuel,
+            "Agency:", agency
+        );
+    
+        if (brand !== undefined) {
+            whereConditions.push(`br.id = $${params.length + 1}`);
             params.push(brand);
         }
-        if (model) {
-            whereConditions.push(`CAST(mo.id AS TEXT) = $${params.length + 1}`);
+        if (model !== undefined) {
+            whereConditions.push(`mo.id = $${params.length + 1}`);
             params.push(model);
         }
     
@@ -245,13 +247,13 @@ export class renterController
         }
     
         // Fuel and agency filters
-        if (fuel !== null) {
-            whereConditions.push(`CAST(ca.fuel AS TEXT) = $${params.length + 1}`);
+        if (fuel !== undefined) {
+            whereConditions.push(`ca.fuel = $${params.length + 1}`);
             params.push(fuel);
         }
         if (agency) {
-            whereConditions.push(`CAST(ag.name AS TEXT) LIKE $${params.length + 1}`);
-            params.push(agency);
+            whereConditions.push(`ag.name ILIKE $${params.length + 1}`);
+            params.push(`%${agency}%`);
         }
     
         // Ensure basic conditions are always applied
@@ -267,6 +269,8 @@ export class renterController
             INNER JOIN agencies ag ON ca.agency = ag.id
             ${whereClause}
             LIMIT $1 OFFSET $2`;
+            
+        console.log(selectQuery);
     
         try {
             const res = await client.query(selectQuery, params);
