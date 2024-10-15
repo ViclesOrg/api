@@ -173,6 +173,33 @@ export class renterController
         }
     }
 
+    async getFullSingleCar(carId: any)
+    {   
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `
+            SELECT cim.link, cim.car FROM car_images cim
+            INNER JOIN cars ca ON ca.id = cim.car
+            WHERE ca.id = $1`;
+        const values = [carId]
+        try
+        {
+            const res: any = await client.query(selectQuery, values)
+            if (res.rowCount === 0)
+                return {links: [], error: APIErrors.somethingWentWrong}
+            else
+            {
+                return {links: res.rows, error: APIErrors.Success}
+            }
+        }catch (err) {
+            console.error('Error selecting data:', err);
+        }
+        finally {
+            await client.end();
+        }
+    }
+
     async getModels(brand: any)
     {   
         const client = newClient();
@@ -218,14 +245,6 @@ export class renterController
         const params: any[] = [limit, offset];
     
         // Check for brand and model
-        console.log(
-            "Brand:", brand,
-            "Model:", model,
-            "Min:", minPrice,
-            "Max:", maxPrice,
-            "Fuel:", fuel,
-            "Agency:", agency
-        );
     
         if (brand !== undefined) {
             whereConditions.push(`br.id = $${params.length + 1}`);
@@ -262,15 +281,15 @@ export class renterController
             : `WHERE ca.detached = false AND ca.sold = false`;
     
         const selectQuery = `
-            SELECT ca.id, ca.price, ca.cover, mo.name AS cmodel, br.name AS cbrand, ag.name AS "owner"
+            SELECT ca.id, ca.price, ca.trunk_size AS trunkSize, ca.seats, ca.miles, gr.name AS gear, f.name AS fuel, mo.name AS cmodel, br.name AS cbrand, ag.name AS "owner", ca.cover
             FROM cars ca
             INNER JOIN models mo ON ca.model = mo.id
             INNER JOIN brands br ON br.id = mo.brand
             INNER JOIN agencies ag ON ca.agency = ag.id
+			INNER JOIN fuel f ON f.id = ca.fuel
+			INNER JOIN grears gr ON gr.id = ca.gear
             ${whereClause}
             LIMIT $1 OFFSET $2`;
-            
-        console.log(selectQuery);
     
         try {
             const res = await client.query(selectQuery, params);
@@ -307,5 +326,7 @@ export class renterController
             return await this.getBrands()
         else if (this.operation === 'models')
             return await this.getModels(this.data.brand)
+        else if (this.operation === 'fullSingleCar')
+            return await this.getFullSingleCar(this.data.id)
 	}
 }
