@@ -173,7 +173,7 @@ export class renterController
         }
     }
 
-    async getFullSingleCar(carId: any)
+    async getCarImages(carId: any)
     {   
         const client = newClient();
         await client.connect();
@@ -217,6 +217,29 @@ export class renterController
             {
                 return {brands: res.rows, error: APIErrors.Success}
             }
+        }catch (err) {
+            console.error('Error selecting data:', err);
+        }
+        finally {
+            await client.end();
+        }
+    }
+
+    async getRentalDates(carId: any)
+    {   
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `
+            SELECT re.start, re.end FROM rentals re
+            INNER JOIN cars ca
+            ON ca.id = re.car
+            WHERE ca.id = $1 and re.end > NOW()`;
+        const values = [carId]
+        try
+        {
+            const res: any = await client.query(selectQuery, values)
+            return {dates: res.rows, error: APIErrors.Success}
         }catch (err) {
             console.error('Error selecting data:', err);
         }
@@ -326,7 +349,9 @@ export class renterController
             return await this.getBrands()
         else if (this.operation === 'models')
             return await this.getModels(this.data.brand)
-        else if (this.operation === 'fullSingleCar')
-            return await this.getFullSingleCar(this.data.id)
+        else if (this.operation === 'CarImages')
+            return await this.getCarImages(this.data.id)
+        else if (this.operation === 'rentalDates')
+            return await this.getRentalDates(this.data.id)
 	}
 }
