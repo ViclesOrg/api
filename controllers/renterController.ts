@@ -153,8 +153,7 @@ export class renterController
         const client = newClient();
         await client.connect();
 
-        const selectQuery = `
-            SELECT * FROM brands`;
+        const selectQuery = `SELECT * FROM brands`;
 
         try
         {
@@ -334,6 +333,33 @@ export class renterController
         }
     }
 
+    async rentCar(carID:any, renterID:any, start:any, end:any) {
+        const client = newClient();
+        await client.connect();
+
+
+        // Here I have to careate push notification event, to create a notification towards the agency
+        const selectQuery = `
+            INSERT INTO rentals (renter,"start", "end", car) 
+            VALUES ($1, $2, $3, $4)
+            RETURNING *`;
+        const values = [renterID, start, end, carID]
+        try
+        {
+            const res: any = await client.query(selectQuery, values)
+            if  (res.rows.length > 0)
+                return APIErrors.Success
+            else
+                return APIErrors.somethingWentWrong
+        }catch (err) {
+            console.error('Error Inserting data data:', err);
+            return APIErrors.somethingWentWrong
+        }
+        finally {
+            await client.end();
+        }
+    }
+
 	async resolve()
     {
 		if (this.operation === 'create')
@@ -353,5 +379,7 @@ export class renterController
             return await this.getCarImages(this.data.id)
         else if (this.operation === 'rentalDates')
             return await this.getRentalDates(this.data.id)
+        else if (this.operation === 'rentCar')
+            return await this.rentCar(this.data.car, this.data.renter, this.data.start, this.data.end)
 	}
 }
