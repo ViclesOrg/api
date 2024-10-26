@@ -2,6 +2,7 @@ import { serve } from 'bun';
 import { Server as SocketIOServer } from 'socket.io'; // Import Socket.IO
 import { agencyController } from './controllers/agencyController';
 import { renterController } from './controllers/renterController';
+import { sockerController } from './controllers/socketController';
 
 const PORT = 3000;
 
@@ -14,19 +15,17 @@ const io = new SocketIOServer({
   },
 });
 
+const sc = new sockerController()
 // Handling Socket.IO connections
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
-
-  socket.on('custom_event', (data) => {
-    console.log('Received data from client:', data);
-    setInterval(()=>{
-      socket.emit('response_event', { message: 'Hello from server!' });
-    }, 3000)
-  });
-
+  
+  socket.on('establish', (data)=>{
+    sc.establish(socket.id, data.user_id)
+  })
+  
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    sc.destroy(socket.id)
   });
 });
 
