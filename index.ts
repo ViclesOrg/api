@@ -2,7 +2,7 @@ import { serve } from 'bun';
 import { Server as SocketIOServer } from 'socket.io'; // Import Socket.IO
 import { agencyController } from './controllers/agencyController';
 import { renterController } from './controllers/renterController';
-import { sockerController } from './controllers/socketController';
+import { socketController } from './controllers/socketController';
 
 const PORT = 3000;
 
@@ -15,17 +15,18 @@ const io = new SocketIOServer({
   },
 });
 
-const sc = new sockerController()
+const sc = new socketController()
 // Handling Socket.IO connections
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
   
-  socket.on('establish', (data)=>{
-    sc.establish(socket.id, data.user_id)
+  socket.on('establish', async (data)=>{
+    await sc.establish(socket.id, data.user_id)
+    socket.emit("notifs", {notifications: await sc.getUnseenNotifications(data.user_id)})
   })
   
-  socket.on('disconnect', () => {
-    sc.destroy(socket.id)
+  socket.on('disconnect', async () => {
+    await sc.destroy(socket.id)
   });
 });
 

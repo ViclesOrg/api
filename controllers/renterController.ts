@@ -340,7 +340,7 @@ export class renterController
 
         // Here I have to careate push notification event, to create a notification towards the agency
         const selectQuery = `
-            INSERT INTO rentals (renter,"start", "end", car) 
+            INSERT INTO rentals (renter,"start_date", "end_date", car) 
             VALUES ($1, $2, $3, $4)
             RETURNING *`;
         const values = [renterID, start, end, carID]
