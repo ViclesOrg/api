@@ -36,7 +36,7 @@ export class socketController
   {
     const client = newClient();
     await client.connect();
-    const selectQuery = `SELECT n.id, cl.name AS renter, cl.driver_license, r.start_date, r.end_date, ca.plate, br.name AS brand, mo.name AS model
+    const selectQuery = `SELECT n.id, cl.phone, cl.name AS renter, cl.driver_license, r.start_date, r.end_date, ca.plate, br.name AS brand, mo.name AS model
       FROM notifications n
       INNER JOIN rentals r ON r.car = n.car
       INNER JOIN cars ca ON r.car = ca.id
