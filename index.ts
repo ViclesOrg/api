@@ -3,6 +3,7 @@ import { Server as SocketIOServer } from 'socket.io'; // Import Socket.IO
 import { agencyController } from './controllers/agencyController';
 import { renterController } from './controllers/renterController';
 import { socketController } from './controllers/socketController';
+import {newClient} from "./db_connection";
 
 const PORT = 3000;
 
@@ -15,6 +16,22 @@ const io = new SocketIOServer({
   },
 });
 
+async function setupDatabaseListener() {
+  const client = newClient();
+  await client.connect();
+  console.log('Connected to PostgreSQL');
+
+  await client.query('LISTEN new_notification');
+
+  client.on('notification', async (msg:any) => {
+    const payload = JSON.parse(msg.payload);
+    console.log('New notification:', payload);
+
+    // Emit notification to all connected Socket.IO clients
+    io.emit("notifs", {notifications: await sc.getUnseenNotifications(payload.target)})
+  });
+}
+
 const sc = new socketController()
 // Handling Socket.IO connections
 io.on('connection', (socket) => {
@@ -25,11 +42,13 @@ io.on('connection', (socket) => {
     socket.emit("notifs", {notifications: await sc.getUnseenNotifications(data.user_id)})
   })
   
+  
   socket.on('disconnect', async () => {
     await sc.destroy(socket.id)
   });
 });
 
+setupDatabaseListener()
 // Start Bun HTTP Server
 serve({
   port: PORT,
