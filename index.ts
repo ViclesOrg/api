@@ -25,10 +25,12 @@ async function setupDatabaseListener() {
 
   client.on('notification', async (msg:any) => {
     const payload = JSON.parse(msg.payload);
-    console.log('New notification:', payload);
-
-    // Emit notification to all connected Socket.IO clients
-    io.emit("notifs", {notifications: await sc.getUnseenNotifications(payload.target)})
+    
+    // HERE I have to ensure that the notification is not broadcasted to all connected users,
+    // so I have to get the socketid from realtime table
+    const sockid = (await sc.getUserSocketId(payload.target)).sockid
+    if (io.sockets.sockets.has(sockid))
+      io.to(sockid).emit("notifs", {notifications: await sc.getUnseenNotifications(payload.target)})
   });
 }
 
@@ -39,6 +41,7 @@ io.on('connection', (socket) => {
   
   socket.on('establish', async (data)=>{
     await sc.establish(socket.id, data.user_id)
+    console.log(data)
     socket.emit("notifs", {notifications: await sc.getUnseenNotifications(data.user_id)})
   })
   

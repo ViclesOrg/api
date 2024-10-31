@@ -21,8 +21,8 @@ export class renterController {
 
       // Update the notifications table
       const notificationQuery = `
-          UPDATE notifications
-          SET seen = true
+          UPDATE notifications 
+          SET seen = true 
           WHERE id = $1;
         `;
       await client.query(notificationQuery, [notification]);
@@ -54,8 +54,8 @@ export class renterController {
 
       // Update the notifications table
       const notificationQuery = `
-          UPDATE notifications
-          SET seen = true
+          UPDATE notifications 
+          SET seen = true 
           WHERE id = $1;
         `;
       await client.query(notificationQuery, [notification]);

@@ -62,6 +62,29 @@ export class socketController
     }
   }
   
+  async getUserSocketId(user_id)
+  {
+    const client = newClient();
+    await client.connect();
+    const selectQuery = `SELECT * FROM realtime WHERE user_id = $1`;
+    const values = [user_id]
+    try
+    {
+
+        const result = await client.query(selectQuery, values)
+        if (result.rowCount > 0)
+            return result.rows[0]
+        else
+            return APIErrors.somethingWentWrong
+    }catch (err) {
+        console.error('ERROR SELECTING DATA:', err);
+        return APIErrors.somethingWentWrong
+    }
+    finally {
+        await client.end();
+    }
+  }
+  
   async destroy(sid: string)
   {
     const client = newClient();
