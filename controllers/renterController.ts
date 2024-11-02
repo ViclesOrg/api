@@ -286,10 +286,10 @@ export class renterController {
     await client.connect();
 
     const selectQuery = `
-            SELECT re.start, re.end FROM rentals re
+            SELECT re.start_date, re.end_date FROM rentals re
             INNER JOIN cars ca
             ON ca.id = re.car
-            WHERE ca.id = $1 and re.end > NOW()`;
+            WHERE ca.id = $1 and re.end_date > NOW()`;
     const values = [carId];
     try {
       const res: any = await client.query(selectQuery, values);

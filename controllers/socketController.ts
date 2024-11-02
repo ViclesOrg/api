@@ -62,7 +62,7 @@ export class socketController
     }
   }
   
-  async getUserSocketId(user_id)
+  async getUserSocketId(user_id:number)
   {
     const client = newClient();
     await client.connect();
