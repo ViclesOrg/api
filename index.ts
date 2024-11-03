@@ -39,9 +39,12 @@ const sc = new socketController()
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
   
+  socket.on('establishRenter', async (data)=>{
+    await sc.establish(socket.id, data.user_id)
+  })
+  
   socket.on('establish', async (data)=>{
     await sc.establish(socket.id, data.user_id)
-    console.log(data)
     socket.emit("notifs", {notifications: await sc.getUnseenNotifications(data.user_id)})
   })
   
