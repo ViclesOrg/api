@@ -19,14 +19,6 @@ export class renterController {
     try {
       await client.query("BEGIN"); // Start transaction
 
-      // Update the notifications table
-      const notificationQuery = `
-          UPDATE notifications 
-          SET seen = true 
-          WHERE id = $1;
-        `;
-      await client.query(notificationQuery, [notification]);
-
       // Update the rentals table
       const rentalQuery = `
           UPDATE rentals
@@ -34,6 +26,14 @@ export class renterController {
           WHERE id = $1;
         `;
       await client.query(rentalQuery, [bookingId]);
+      
+      // Update the notifications table
+      const notificationQuery = `
+          UPDATE notifications 
+          SET seen = true 
+          WHERE id = $1;
+        `;
+      await client.query(notificationQuery, [notification]);
 
       await client.query("COMMIT"); // Commit the transaction if both succeed
       return APIErrors.Success;
@@ -52,6 +52,14 @@ export class renterController {
     try {
       await client.query("BEGIN"); // Start transaction
 
+      // Update the rentals table
+      const rentalQuery = `
+          UPDATE rentals
+          SET accepted = 1
+          WHERE id = $1;
+        `;
+      await client.query(rentalQuery, [bookingId]);
+      
       // Update the notifications table
       const notificationQuery = `
           UPDATE notifications 
@@ -60,18 +68,11 @@ export class renterController {
         `;
       await client.query(notificationQuery, [notification]);
 
-      // Update the rentals table
-      const rentalQuery = `
-          UPDATE rentals
-          SET accepted = 1
-          WHERE id = $1;
-        `;
-      await client.query(rentalQuery, [bookingId]);
-
       await client.query("COMMIT"); // Commit the transaction if both succeed
       return APIErrors.Success;
     } catch (error) {
       await client.query("ROLLBACK"); // Rollback on error
+      console.log(error)
       return APIErrors.Failure;
     } finally {
       await client.end();
@@ -300,6 +301,32 @@ export class renterController {
       await client.end();
     }
   }
+  
+  async getRenterNotifications(renterId: number) {
+    const client = newClient();
+    await client.connect();
+
+    const selectQuery = `
+      SELECT n.id AS notification, ag.name AS agency, r.accepted AS status, mo.name AS model, br.name AS brand
+      FROM notifications n
+      INNER JOIN rentals r ON r.car = n.car
+      INNER JOIN cars ca ON r.car = ca.id
+      INNER JOIN agencies ag ON ca.agency = ag.id
+      INNER JOIN models mo ON ca.model = mo.id
+      INNER JOIN brands br ON mo.brand = br.id
+      INNER JOIN renters cl ON r.renter = cl.id
+      WHERE n.target = $1`;
+    const values = [renterId];
+    try {
+      const res: any = await client.query(selectQuery, values);
+      return { notifications: res.rows, error: APIErrors.Success };
+    } catch (err) {
+      console.error("Error selecting data:", err);
+      return { notifications: [], error: APIErrors.Failure };
+    } finally {
+      await client.end();
+    }
+  }
 
   async getActiveCars(
     page = 1,
@@ -443,5 +470,7 @@ export class renterController {
       return await this.acceptBooking(this.data.rental, this.data.notification);
     else if (this.operation === "cancelBooking")
       return await this.cancelBooking(this.data.rental, this.data.notification);
+    else if (this.operation === "renterNotifications")
+      return this.getRenterNotifications(this.data.renterId)
   }
 }
