@@ -29,6 +29,7 @@ async function setupDatabaseListener() {
     // HERE I have to ensure that the notification is not broadcasted to all connected users,
     // so I have to get the socketid from realtime table
     const sockid = (await sc.getUserSocketId(payload.target)).sockid
+    console.log("new notif to : " + sockid)
     if (io.sockets.sockets.has(sockid))
       io.to(sockid).emit("notifs", {notifications: await sc.getUnseenNotifications(payload.target)})
   });

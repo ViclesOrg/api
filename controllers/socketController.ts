@@ -43,7 +43,7 @@ export class socketController
       INNER JOIN models mo ON ca.model = mo.id
       INNER JOIN brands br ON mo.brand = br.id
       INNER JOIN renters cl ON r.renter = cl.id
-      WHERE ca.agency = $1 and r.accepted = 0 and n.seen = false`;
+      WHERE n.target = $1 and r.accepted = 0 and n.seen = false`;
     const values = [user_id]
     try
     {
