@@ -16,6 +16,7 @@ export interface car
 	miles: number,
 	trunc: number,
 	plate: string,
+	city: number,
 	model_year: number,
 	seats: number;
 }
@@ -26,11 +27,11 @@ async function insertCar(carData: car, cover: string)
 	await client.connect();
 
 	const insertQuery = `
-		INSERT INTO cars ("year", seats, miles, ac, gear, "trunk_size", model, fuel, agency, plate, price, "cover") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		INSERT INTO cars ("year", seats, miles, ac, gear, "trunk_size", model, fuel, agency, plate, price, "cover", city) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING *`;
 	const Values = [carData.model_year, carData.seats, carData.miles, carData.ac, 
 					carData.gear, carData.trunc, carData.model, carData.fuel, 
-					carData.agency, carData.plate, carData.price, "https://cdn.vicles.com/" + (new URL(cover)).pathname];
+					carData.agency, carData.plate, carData.price, "https://cdn.vicles.com/" + (new URL(cover)).pathname, carData.city];
 	try
 	{
 		const res = await client.query(insertQuery, Values)
@@ -111,14 +112,14 @@ async function updateCar(carId: number, carData: Partial<car>) {
     const updateQuery = `
         UPDATE cars
         SET "year" = $1, seats = $2, miles = $3, ac = $4, gear = $5, "trunk_size" = $6,
-            model = $7, fuel = $8, agency = $9, plate = $10, price = $11
+            model = $7, fuel = $8, agency = $9, plate = $10, price = $11, city = $13
         WHERE id = $12
         RETURNING *`;
 
     const values = [
         carData.model_year, carData.seats, carData.miles, carData.ac,
         carData.gear, carData.trunc, carData.model, carData.fuel,
-        carData.agency, carData.plate, carData.price, carId
+        carData.agency, carData.plate, carData.price, carId, carData.city
     ];
 
     try {

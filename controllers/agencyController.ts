@@ -177,6 +177,29 @@ export class agencyController
         }
     }
 
+    async cities()
+    {
+        const client = newClient();
+        await client.connect();
+
+        const selectQuery = `SELECT * from cities WHERE country = 1 ORDER BY name ASC`;
+        try
+        {
+            const res = await client.query(selectQuery)
+            if (res.rowCount === 0)
+                return APIErrors.somethingWentWrong
+            else
+            {
+                return res.rows
+            }
+        }catch (err) {
+            console.error('Error selecting data:', err);
+        }
+        finally {
+            await client.end();
+        }
+    }
+    
     async checkPlateExistence(plate: string)
     {
         const client = newClient();
@@ -372,6 +395,8 @@ export class agencyController
             return await this.deleteCar(this.data.id)
         else if (this.operation === 'updateCar')
             return await this.updateCar()
+        else if (this.operation === 'cities')
+            return await this.cities()
 
     }
 
