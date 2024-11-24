@@ -176,7 +176,7 @@ export class renterController {
     await client.connect();
 
     const selectQuery = `
-            SELECT * FROM renters r Where r.email=$1 and r.password=$2`;
+            SELECT r.name, r.driver_license, r.email, r.phone, r.birth, r.address, r.image, r.user_id FROM renters r Where r.email=$1 and r.password=$2`;
     const Values = [email, passHash];
     try {
       const res: any = await client.query(selectQuery, Values);
