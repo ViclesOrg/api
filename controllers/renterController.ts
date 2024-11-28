@@ -176,7 +176,7 @@ export class renterController {
     await client.connect();
 
     const selectQuery = `
-            SELECT r.id, r.name, r.driver_license, r.email, r.phone, r.birth, r.address, r.image, r.user_id FROM renters r 
+            SELECT r.id, r.name, r.driver_license, r.email, r.phone, r.birth, r.address, r.image, r.user_id FROM renters r
             Where r.email=$1 and r.password=$2`;
     const Values = [email, passHash];
     try {
@@ -385,13 +385,14 @@ export class renterController {
         : `WHERE ca.detached = false AND ca.sold = false`;
 
     const selectQuery = `
-            SELECT ca.id, ca.price, ca.trunk_size AS trunkSize, ca.seats, ca.miles, gr.name AS gear, f.name AS fuel, mo.name AS cmodel, br.name AS cbrand, ag.name AS "owner", ca.cover
-            FROM cars ca
-            INNER JOIN models mo ON ca.model = mo.id
-            INNER JOIN brands br ON br.id = mo.brand
-            INNER JOIN agencies ag ON ca.agency = ag.id
-			INNER JOIN fuel f ON f.id = ca.fuel
-			INNER JOIN grears gr ON gr.id = ca.gear
+      SELECT ci.name AS city, ca.id, ca.price, ca.trunk_size AS trunkSize, ca.seats, ca.miles, gr.name AS gear, f.name AS fuel, mo.name AS cmodel, br.name AS cbrand, ag.name AS "owner", ca.cover
+      FROM cars ca
+      INNER JOIN models mo ON ca.model = mo.id
+      INNER JOIN brands br ON br.id = mo.brand
+      INNER JOIN agencies ag ON ca.agency = ag.id
+      INNER JOIN fuel f ON f.id = ca.fuel
+      INNER JOIN grears gr ON gr.id = ca.gear
+      INNER JOIN cities ci ON ca.city = ci.id
             ${whereClause}
             LIMIT $1 OFFSET $2`;
 
