@@ -286,7 +286,6 @@ export class renterController {
   async getRentalDates(carId: any) {
     const client = newClient();
     await client.connect();
-
     const selectQuery = `
             SELECT re.start_date, re.end_date FROM rentals re
             INNER JOIN cars ca
@@ -298,6 +297,7 @@ export class renterController {
       return { dates: res.rows, error: APIErrors.Success };
     } catch (err) {
       console.error("Error selecting data:", err);
+      return { dates: null, error: APIErrors.somethingWentWrong };
     } finally {
       await client.end();
     }
