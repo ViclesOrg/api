@@ -219,6 +219,28 @@ export class renterController {
     }
   }
 
+  async getCities() {
+    const client = newClient();
+    await client.connect();
+
+    const selectQuery = `
+      SELECT ci.id, ci.name FROM cities ci
+      ORDER BY ci.name ASC`;
+
+    try {
+      const res: any = await client.query(selectQuery);
+      if (res.rowCount === 0)
+        return { cities: [], error: APIErrors.somethingWentWrong };
+      else {
+        return { cities: res.rows, error: APIErrors.Success };
+      }
+    } catch (err) {
+      console.error("Error selecting data:", err);
+    } finally {
+      await client.end();
+    }
+  }
+
   async getBrands() {
     const client = newClient();
     await client.connect();
@@ -453,6 +475,7 @@ export class renterController {
         this.data.agency,
       );
     else if (this.operation === "fuel") return await this.getFuel();
+    else if (this.operation === "cities") return await this.getCities();
     else if (this.operation === "brands") return await this.getBrands();
     else if (this.operation === "models")
       return await this.getModels(this.data.brand);
