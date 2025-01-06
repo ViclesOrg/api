@@ -1,9 +1,18 @@
-import { serve } from 'bun';
-import { Server as SocketIOServer } from 'socket.io'; // Import Socket.IO
-import { agencyController } from './controllers/agencyController';
-import { renterController } from './controllers/renterController';
-import { socketController } from './controllers/socketController';
-import {newClient} from "./db_connection";
+import { serve } from "bun";
+import { Server as SocketIOServer } from "socket.io"; // Import Socket.IO
+import { agencyController } from "./controllers/agencyController";
+import { renterController } from "./controllers/renterController";
+import { socketController } from "./controllers/socketController";
+import { newClient } from "./db_connection";
+import { APIErrors } from "./entities/APIErrors";
+import {
+  convertPointCloudToPLY,
+  convertBodyPCLToArray,
+  convertPointCloudToSTL,
+  generateSTL,
+  convertArrayToPoints,
+  generatePLY,
+} from "./three/toMesh";
 
 const PORT = 3000;
 
@@ -19,43 +28,48 @@ const io = new SocketIOServer({
 async function setupDatabaseListener() {
   const client = newClient();
   await client.connect();
-  console.log('Connected to PostgreSQL');
+  console.log("Connected to PostgreSQL");
 
-  await client.query('LISTEN new_notification');
+  await client.query("LISTEN new_notification");
 
-  client.on('notification', async (msg:any) => {
+  client.on("notification", async (msg: any) => {
     const payload = JSON.parse(msg.payload);
-    
+
     // HERE I have to ensure that the notification is not broadcasted to all connected users,
     // so I have to get the socketid from realtime table
-    const sockid = (await sc.getUserSocketId(payload.target)).sockid
-    console.log("new notif to : " + sockid)
+    const sockid = (await sc.getUserSocketId(payload.target)).sockid;
+    console.log("new notif to : " + sockid);
     if (io.sockets.sockets.has(sockid))
-      io.to(sockid).emit("notifs", {notifications: await sc.getUnseenNotifications(payload.target)})
+      io.to(sockid).emit("notifs", {
+        notifications: await sc.getUnseenNotifications(payload.target),
+      });
   });
 }
 
-const sc = new socketController()
+const sc = new socketController();
 // Handling Socket.IO connections
-io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
-  
-  socket.on('establishRenter', async (data)=>{
-    await sc.establish(socket.id, data.user_id)
-  })
-  
-  socket.on('establish', async (data)=>{
-    await sc.establish(socket.id, data.user_id)
-    socket.emit("notifs", {notifications: await sc.getUnseenNotifications(data.user_id)})
-  })
-  
-  
-  socket.on('disconnect', async () => {
-    await sc.destroy(socket.id)
+io.on("connection", (socket) => {
+  console.log("New client connected:", socket.id);
+
+  socket.on("establishRenter", async (data) => {
+    await sc.establish(socket.id, data.user_id);
+  });
+
+  socket.on("establish", async (data) => {
+    await sc.establish(socket.id, data.user_id);
+    socket.emit("notifs", {
+      notifications: await sc.getUnseenNotifications(data.user_id),
+    });
+  });
+
+  socket.on("disconnect", async () => {
+    await sc.destroy(socket.id);
   });
 });
 
-setupDatabaseListener()
+//#########################################
+setupDatabaseListener();
+//#########################################
 // Start Bun HTTP Server
 serve({
   port: PORT,
@@ -70,13 +84,13 @@ serve({
     };
 
     if (request.method === "POST") {
-      if (url.pathname.includes('/agency')) {
+      if (url.pathname.includes("/agency")) {
         const body = await request.formData();
         const operation = url.pathname.split("/")[2];
         const agency = new agencyController(operation, JSON.stringify(body));
         const result = await agency.resolve();
         return new Response(JSON.stringify(result), { headers });
-      } else if (url.pathname.includes('/renters')) {
+      } else if (url.pathname.includes("/renters")) {
         const body = await request.formData();
         const operation = url.pathname.split("/")[2];
         const renter = new renterController(operation, JSON.stringify(body));
@@ -84,24 +98,24 @@ serve({
         return new Response(JSON.stringify(result), { headers });
       }
     } else if (request.method === "GET") {
-      if (url.pathname.includes('/agency')) {
+      if (url.pathname.includes("/agency")) {
         const body = JSON.parse(JSON.stringify(url.searchParams));
         const operation = url.pathname.split("/")[2];
         const agency = new agencyController(operation, JSON.stringify(body));
         const result = await agency.resolve();
         return new Response(JSON.stringify(result), { headers });
-      } else if (url.pathname.includes('/renters')) {
+      } else if (url.pathname.includes("/renters")) {
         const body = JSON.parse(JSON.stringify(url.searchParams));
         const operation = url.pathname.split("/")[2];
         const renter = new renterController(operation, JSON.stringify(body));
         const result = await renter.resolve();
         return new Response(JSON.stringify(result), { headers });
-      } else if (url.pathname.includes('/health')) {
-        return new Response('OK', { status: 200 });
+      } else if (url.pathname.includes("/health")) {
+        return new Response("OK", { status: 200 });
       }
     }
 
-    return new Response('Not Found', { status: 404 });
+    return new Response("Not Found", { status: 404 });
   },
 });
 
