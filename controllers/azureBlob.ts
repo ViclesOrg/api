@@ -1,7 +1,7 @@
 import { BlobServiceClient } from '@azure/storage-blob';
 
 // Replace with your Azure Blob Storage connection string and container name
-const connectionString = 'DefaultEndpointsProtocol=https;AccountName=viclesdevimagestore;AccountKey=963pd9m36E4rYTiH+0nQcY7SUGjUwmicEsNjB4OeedY20E3KSED7dLjq8AMqF0pNL8ras5jK5Z5n+AStZKQp6A==;EndpointSuffix=core.windows.net';
+const connectionString = 'TOKEN_GOES_HERE';
 const containerName = 'viclesdev';
 
 interface ImagePack {

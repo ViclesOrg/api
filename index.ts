@@ -5,14 +5,6 @@ import { renterController } from "./controllers/renterController";
 import { socketController } from "./controllers/socketController";
 import { newClient } from "./db_connection";
 import { APIErrors } from "./entities/APIErrors";
-import {
-  convertPointCloudToPLY,
-  convertBodyPCLToArray,
-  convertPointCloudToSTL,
-  generateSTL,
-  convertArrayToPoints,
-  generatePLY,
-} from "./three/toMesh";
 
 const PORT = 3000;
 
